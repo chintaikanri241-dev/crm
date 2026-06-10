@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>不動産CRM ダッシュボード</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #f8f8f6;
+    --surface: #ffffff;
+    --surface2: #f1f0ea;
+    --border: rgba(0,0,0,0.10);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #5a5a56;
+    --text3: #9a9a94;
+    --purple: #534AB7;
+    --purple-light: #EEEDFE;
+    --purple-mid: #AFA9EC;
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --surface: #242422;
+      --surface2: #2e2e2c;
+      --border: rgba(255,255,255,0.10);
+      --border2: rgba(255,255,255,0.18);
+      --text: #e8e8e2;
+      --text2: #a8a8a2;
+      --text3: #686860;
+      --purple-light: #2a2660;
+      --teal-light: #0a2e22;
+      --amber-light: #2e1e04;
+      --red-light: #2e0a0a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+  .app { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar { width: 220px; background: var(--surface); border-right: 0.5px solid var(--border); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 4px; position: fixed; top: 0; left: 0; height: 100vh; z-index: 50; transition: transform 0.3s; }
+  .sidebar-logo { font-size: 15px; font-weight: 600; color: var(--purple); padding: 0 8px 1.25rem; border-bottom: 0.5px solid var(--border); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text2); font-size: 13px; border: none; background: none; width: 100%; text-align: left; transition: background 0.15s, color 0.15s; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--purple-light); color: var(--purple); font-weight: 500; }
+  .nav-item i { font-size: 17px; }
+  .sidebar-section { font-size: 10px; color: var(--text3); padding: 8px 12px 4px; letter-spacing: 0.06em; margin-top: 8px; }
+
+  /* Main */
+  .main { margin-left: 220px; padding: 2rem; flex: 1; min-width: 0; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 1.5rem; }
+  .page-title { font-size: 20px; font-weight: 600; color: var(--text); }
+  .page-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.25rem; }
+  .metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px 16px; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .metric-val { font-size: 26px; font-weight: 600; color: var(--text); }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .metric.warn { border: 1px solid #FAC775; }
+  .metric.good { border: 1px solid #9FE1CB; }
+
+  /* Alert */
+  .alert-card { background: #FFFBF0; border: 1px solid #FAC775; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .alert-title { font-size: 13px; font-weight: 500; color: #633806; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .alert-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid #FAC775; font-size: 13px; flex-wrap: wrap; gap: 8px; }
+  .alert-row:last-child { border-bottom: none; }
+  .follow-btn { font-size: 11px; padding: 4px 10px; border-radius: 99px; border: 1px solid #BA7517; color: #633806; background: #FAEEDA; cursor: pointer; white-space: nowrap; }
+  .follow-btn:hover { background: #FAC775; }
+
+  /* Toolbar */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .filters select { font-size: 12px; padding: 6px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; }
+  .sort-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 12px; padding: 5px 12px; border-radius: 99px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text2); cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+  .chip.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .btn-add { background: var(--purple); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-add:hover { background: #3C3489; }
+
+  /* Table */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text2); padding: 8px 10px; border-bottom: 0.5px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { color: var(--text); }
+  th.sort-active { color: var(--purple); }
+  td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr.row-alert { background: rgba(250,199,117,0.10); }
+  tr.row-flash { animation: flashGreen 1.2s ease; }
+  @keyframes flashGreen { 0% { background: rgba(29,158,117,0.2); } 100% { background: transparent; } }
+  .name-link { color: var(--purple); font-weight: 500; cursor: pointer; }
+  .name-link:hover { text-decoration: underline; }
+
+  /* Badges */
+  .badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500; white-space: nowrap; }
+  .b-echo   { background: #E6F1FB; color: #0C447C; }
+  .b-sent   { background: #EEEDFE; color: #3C3489; }
+  .b-wait   { background: #FAEEDA; color: #633806; }
+  .b-naiken { background: #E1F5EE; color: #085041; }
+  .b-moushi { background: #EAF3DE; color: #27500A; }
+  .b-done   { background: #EAF3DE; color: #173404; }
+  .b-stop   { background: #FCEBEB; color: #791F1F; }
+  .day-badge { font-size: 10px; padding: 2px 6px; border-radius: 99px; margin-left: 4px; }
+  .day-ok   { background: #E1F5EE; color: #085041; }
+  .day-warn { background: #FAEEDA; color: #633806; }
+  .day-over { background: #FCEBEB; color: #791F1F; }
+  .cond-pill { font-size: 10px; background: var(--surface2); border-radius: 99px; padding: 2px 7px; color: var(--text2); display: inline-block; white-space: nowrap; margin: 1px; }
+
+  /* Modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; width: 500px; max-width: 100%; border: 0.5px solid var(--border); max-height: 92vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-row { display: flex; flex-direction: column; gap: 3px; }
+  .form-row.full { grid-column: 1 / -1; }
+  .form-row label { font-size: 11px; color: var(--text2); }
+  .form-row input, .form-row select, .form-row textarea { width: 100%; padding: 7px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 13px; font-family: inherit; }
+  .form-row textarea { height: 60px; resize: vertical; }
+  .form-section { grid-column: 1/-1; font-size: 11px; color: var(--text3); padding-bottom: 4px; border-bottom: 0.5px solid var(--border); margin-top: 8px; letter-spacing: 0.04em; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
+  .btn-cancel { background: none; border: 0.5px solid var(--border2); color: var(--text2); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; }
+  .btn-save { background: var(--purple); color: #fff; border: none; padding: 8px 20px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; }
+  .btn-save:hover { background: #3C3489; }
+
+  /* Goal page */
+  .goal-bar-wrap { background: var(--surface2); border-radius: 8px; height: 28px; overflow: hidden; margin: 6px 0 14px; }
+  .goal-bar-fill { height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 12px; font-weight: 500; color: #fff; transition: width 0.6s; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+
+  /* Sales page */
+  .sales-settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; font-size: 12px; color: var(--text2); }
+  .legend-row span { display: flex; align-items: center; gap: 5px; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .action-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .action-table th { font-size: 11px; font-weight: 500; color: var(--text2); padding: 6px 10px; border-bottom: 0.5px solid var(--border); text-align: left; }
+  .action-table td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); }
+  .action-table tr:last-child td { border-bottom: none; }
+  .pace-bar-wrap { background: var(--surface2); border-radius: 6px; height: 8px; overflow: hidden; width: 90px; display: inline-block; vertical-align: middle; }
+  .pace-bar { height: 8px; border-radius: 6px; }
+
+  /* Funnel */
+  .funnel-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .funnel-label { font-size: 12px; color: var(--text2); width: 100px; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 20px; }
+  .funnel-bar { height: 20px; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 500; color: #fff; }
+  .funnel-num { font-size: 12px; color: var(--text2); width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* Mobile */
+  .hamburger { display: none; position: fixed; top: 12px; left: 12px; z-index: 100; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 8px; cursor: pointer; font-size: 20px; color: var(--text); }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; }
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 1rem; padding-top: 3.5rem; }
+    .hamburger { display: flex; }
+    .overlay.open { display: block; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー"><i class="ti ti-menu-2"></i></button>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><i class="ti ti-building-store"></i>不動産CRM</div>
+    <div class="sidebar-section">管理</div>
+    <button class="nav-item active" onclick="showPage('customers')"><i class="ti ti-users"></i>顧客管理</button>
+    <button class="nav-item" onclick="showPage('goal')"><i class="ti ti-target"></i>目標管理</button>
+    <div class="sidebar-section">分析</div>
+    <button class="nav-item" onclick="showPage('analysis')"><i class="ti ti-chart-bar"></i>ファネル分析</button>
+    <button class="nav-item" onclick="showPage('sales')"><i class="ti ti-trending-up"></i>売上達成分析</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- 顧客管理 -->
+    <div id="page-customers" class="page active">
+      <div class="page-header">
+        <div class="page-title">顧客管理</div>
+        <div class="page-sub" id="month-label"></div>
+      </div>
+      <div class="metrics" id="metrics-top"></div>
+      <div class="alert-card" id="alert-section"><div class="alert-title"><i class="ti ti-bell-ringing"></i>フォローアップが必要なお客様</div><div id="alert-list"></div></div>
+      <div class="toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <div class="filters">
+            <select id="filter-staff" onchange="renderTable()">
+              <option value="">全スタッフ</option>
+              <option>田中</option><option>佐藤</option><option>鈴木</option>
+            </select>
+            <select id="filter-status" onchange="renderTable()">
+              <option value="">全ステータス</option>
+              <option>反響</option><option>物件送付</option><option>返信待ち</option>
+              <option>内見予定</option><option>内見実施</option><option>申込/他物件提案</option><option>成約</option><option>離脱</option>
+            </select>
+          </div>
+          <div class="sort-chips">
+            <span style="font-size:11px;color:var(--text3);">並び替え：</span>
+            <button class="chip active" id="chip-lastContact" onclick="setSort('lastContact')"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> 最終連絡日</button>
+            <button class="chip" id="chip-date" onclick="setSort('date')"><i class="ti ti-calendar" style="font-size:12px;vertical-align:-1px"></i> 反響日</button>
+            <button class="chip" id="chip-status" onclick="setSort('status')"><i class="ti ti-layout-list" style="font-size:12px;vertical-align:-1px"></i> ステータス</button>
+          </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i>顧客追加</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:22px"></th>
+                <th onclick="setSort('name')">氏名</th>
+                <th onclick="setSort('staff')">担当</th>
+                <th onclick="setSort('date')">反響日</th>
+                <th onclick="setSort('lastContact')" id="th-lc" class="sort-active">最終連絡日</th>
+                <th onclick="setSort('status')">ステータス</th>
+                <th>物件送付</th>
+                <th onclick="setSort('naikenYotei')">内見予定</th>
+                <th>内見実施</th>
+                <th>次アクション</th>
+                <th>希望条件</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 目標管理 -->
+    <div id="page-goal" class="page">
+      <div class="page-header"><div class="page-title">目標管理</div></div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-trophy"></i>今月の目標達成状況</div>
+        <div id="goal-bars"></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-settings"></i>目標設定</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-row"><label>反響目標数</label><input type="number" id="goal-echo" value="30" oninput="renderGoals()"></div>
+            <div class="form-row"><label>内見目標数</label><input type="number" id="goal-naiken" value="10" oninput="renderGoals()"></div>
+            <div class="form-row"><label>成約目標数</label><input type="number" id="goal-keiyaku" value="5" oninput="renderGoals()"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-donut"></i>ステータス内訳</div>
+          <div style="position:relative;height:200px;"><canvas id="rateChart" role="img" aria-label="ステータス別内訳">ステータス別顧客数</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ファネル分析 -->
+    <div id="page-analysis" class="page">
+      <div class="page-header"><div class="page-title">ファネル分析</div></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-filter"></i>離脱ポイント分析</div>
+          <div id="funnel"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-users"></i>スタッフ別対応数</div>
+          <div style="position:relative;height:200px;"><canvas id="staffChart" role="img" aria-label="スタッフ別対応数">スタッフ別顧客対応数</canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-chart-line"></i>週別反響数推移</div>
+        <div style="position:relative;height:200px;"><canvas id="weekChart" role="img" aria-label="週別反響数">週別反響数推移</canvas></div>
+      </div>
+    </div>
+
+    <!-- 売上達成分析 -->
+    <div id="page-sales" class="page">
+      <div class="page-header"><div class="page-title">売上達成分析</div></div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-settings"></i>目標・条件設定</div>
+        <div class="sales-settings">
+          <div class="form-row"><label>月間売上目標（万円）</label><input type="number" id="s-goal" value="300" oninput="updateSales()"></div>
+          <div class="form-row"><label>1件平均単価（万円）</label><input type="number" id="s-unit" value="20" oninput="updateSales()"></div>
+          <div class="form-row"><label>今月の経過日数</label><input type="number" id="s-elapsed" value="10" oninput="updateSales()"></div>
+          <div class="form-row"><label>月の総営業日数</label><input type="number" id="s-total" value="26" oninput="updateSales()"></div>
+          <div class="form-row"><label>現在の成約数（件）</label><input type="number" id="s-closed" value="2" oninput="updateSales()"></div>
+          <div class="form-row"><label>反響→成約 転換率（%）</label><input type="number" id="s-cvr" value="20" oninput="updateSales()"></div>
+        </div>
+      </div>
+      <div class="metrics" id="sales-metrics"></div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-chart-line"></i>売上進捗グラフ（ペースライン vs 実績）</div>
+        <div class="legend-row">
+          <span><span class="leg-dot" style="background:#534AB7"></span>目標ペース</span>
+          <span><span class="leg-dot" style="background:#1D9E75"></span>実績</span>
+          <span><span class="leg-dot" style="background:#E9A02B;border:1px dashed #BA7517"></span>残り必要ペース</span>
+        </div>
+        <div style="position:relative;height:280px;"><canvas id="paceChart" role="img" aria-label="売上進捗グラフ">売上進捗ペースラインと実績の比較</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-checklist"></i>目標達成に必要な残りアクション</div>
+        <table class="action-table" id="action-table"></table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- 顧客追加・編集モーダル -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"><i class="ti ti-user-plus"></i>顧客追加</div>
+    <div class="form-grid">
+      <div class="form-section">基本情報</div>
+      <div class="form-row"><label>氏名</label><input type="text" id="f-name" placeholder="山田 太郎"></div>
+      <div class="form-row"><label>担当スタッフ</label>
+        <select id="f-staff"><option>田中</option><option>佐藤</option><option>鈴木</option></select>
+      </div>
+      <div class="form-row"><label>反響日</label><input type="date" id="f-date"></div>
+      <div class="form-row"><label>最終連絡日</label><input type="date" id="f-lc"></div>
+      <div class="form-row"><label>ステータス</label>
+        <select id="f-status">
+          <option>反響</option><option>物件送付</option><option>返信待ち</option>
+          <option>内見予定</option><option>内見実施</option><option>申込/他物件提案</option><option>成約</option><option>離脱</option>
+        </select>
+      </div>
+      <div class="form-row"><label>物件送付</label>
+        <select id="f-bukken"><option>未送付</option><option>送付済</option></select>
+      </div>
+      <div class="form-section">内見情報</div>
+      <div class="form-row"><label>内見予定日</label><input type="date" id="f-ny"></div>
+      <div class="form-row"><label>内見実施日</label><input type="date" id="f-nj"></div>
+      <div class="form-row"><label>次アクション</label>
+        <select id="f-action">
+          <option value="">—</option>
+          <option>物件確認フォロー</option><option>内見日程調整</option>
+          <option>申込手続き案内</option><option>他物件を提案</option>
+          <option>クロージング</option><option>様子見</option>
+        </select>
+      </div>
+      <div class="form-row"></div>
+      <div class="form-section">希望条件</div>
+      <div class="form-row"><label>エリア</label><input type="text" id="f-area" placeholder="梅田・難波エリア"></div>
+      <div class="form-row"><label>家賃上限</label><input type="text" id="f-rent" placeholder="8万円以内"></div>
+      <div class="form-row"><label>間取り</label><input type="text" id="f-madori" placeholder="1LDK〜2LDK"></div>
+      <div class="form-row"><label>こだわり条件</label><input type="text" id="f-kodawari" placeholder="ペット可・駅近など"></div>
+      <div class="form-row full"><label>備考</label><textarea id="f-note" placeholder="その他メモ"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveCustomer()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── データ ───
+const STATUSES = ['反響','物件送付','返信待ち','内見予定','内見実施','申込/他物件提案','成約','離脱'];
+const BADGE = {'反響':'b-echo','物件送付':'b-sent','返信待ち':'b-wait','内見予定':'b-naiken','内見実施':'b-naiken','申込/他物件提案':'b-moushi','成約':'b-done','離脱':'b-stop'};
+const FC = ['#378ADD','#534AB7','#E9A02B','#1D9E75','#1D9E75','#639922','#3B6D11','#E24B4A'];
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const TODAYSTR = TODAY.toISOString().slice(0,10);
+
+let customers = JSON.parse(localStorage.getItem('crm_customers') || 'null') || [
+  {name:'山田 花子',staff:'田中',date:'2025-06-01',lastContact:'2025-06-10',status:'成約',bukken:'送付済',ny:'',nj:'2025-06-08',action:'クロージング',area:'梅田',rent:'8万円',madori:'1LDK',kodawari:'宅配BOX必須',note:'LINE経由'},
+  {name:'鈴木 一郎',staff:'佐藤',date:'2025-06-03',lastContact:'2025-06-09',status:'内見実施',bukken:'送付済',ny:'2025-06-09',nj:'2025-06-09',action:'申込手続き案内',area:'難波',rent:'7万円',madori:'1K',kodawari:'駅近',note:''},
+  {name:'田中 美咲',staff:'田中',date:'2025-06-04',lastContact:'2025-06-08',status:'返信待ち',bukken:'送付済',ny:'',nj:'',action:'物件確認フォロー',area:'心斎橋',rent:'9万円',madori:'2LDK',kodawari:'ペット可',note:'2件送付'},
+  {name:'佐藤 健太',staff:'鈴木',date:'2025-06-05',lastContact:'2025-06-09',status:'物件送付',bukken:'送付済',ny:'',nj:'',action:'物件確認フォロー',area:'天王寺',rent:'6万円',madori:'1K',kodawari:'',note:''},
+  {name:'高橋 浩',staff:'佐藤',date:'2025-06-06',lastContact:'2025-06-10',status:'反響',bukken:'未送付',ny:'',nj:'',action:'内見日程調整',area:'本町',rent:'10万円',madori:'2LDK',kodawari:'分譲賃貸',note:'Instagram'},
+  {name:'伊藤 さくら',staff:'田中',date:'2025-06-07',lastContact:'2025-06-07',status:'離脱',bukken:'送付済',ny:'',nj:'',action:'',area:'梅田',rent:'7万円',madori:'1LDK',kodawari:'',note:'音信不通'},
+  {name:'渡辺 翔',staff:'鈴木',date:'2025-06-08',lastContact:'2025-06-10',status:'申込/他物件提案',bukken:'送付済',ny:'2025-06-10',nj:'',action:'申込手続き案内',area:'難波',rent:'8万円',madori:'1LDK',kodawari:'新築',note:''},
+  {name:'中村 愛',staff:'佐藤',date:'2025-06-09',lastContact:'2025-06-10',status:'成約',bukken:'送付済',ny:'2025-06-09',nj:'2025-06-09',action:'',area:'心斎橋',rent:'12万円',madori:'2LDK',kodawari:'駅近',note:'紹介'},
+  {name:'小林 直人',staff:'田中',date:'2025-06-10',lastContact:'2025-06-10',status:'反響',bukken:'未送付',ny:'',nj:'',action:'内見日程調整',area:'天王寺',rent:'7万円',madori:'1K',kodawari:'',note:'TikTok'},
+  {name:'加藤 由美',staff:'鈴木',date:'2025-06-09',lastContact:'2025-06-09',status:'物件送付',bukken:'送付済',ny:'',nj:'',action:'物件確認フォロー',area:'梅田',rent:'9万円',madori:'2LDK',kodawari:'バストイレ別',note:''},
+];
+
+function save() { localStorage.setItem('crm_customers', JSON.stringify(customers)); }
+
+let sortKey = 'lastContact', sortDir = -1, editIdx = null, flashIdx = null;
+let rateChart=null, staffChart=null, weekChart=null, paceChart=null;
+
+// ─── ユーティリティ ───
+function daysSince(d) { if(!d) return null; const dt=new Date(d); dt.setHours(0,0,0,0); return Math.floor((TODAY-dt)/86400000); }
+function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+
+// ─── ナビ ───
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const navs = ['customers','goal','analysis','sales'];
+  document.querySelectorAll('.nav-item')[navs.indexOf(id)]?.classList.add('active');
+  if(id==='goal') setTimeout(renderGoals,50);
+  if(id==='analysis') setTimeout(renderAnalysis,50);
+  if(id==='sales') setTimeout(updateSales,50);
+  if(window.innerWidth<=768) toggleSidebar();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+
+// ─── 月ラベル ───
+document.getElementById('month-label').textContent = TODAY.toLocaleDateString('ja-JP',{year:'numeric',month:'long'});
+
+// ─── ソート ───
+function setSort(key) {
+  sortKey===key ? sortDir*=-1 : (sortKey=key, sortDir=(['lastContact','date','naikenYotei'].includes(key)?-1:1));
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  const cm={lastContact:'chip-lastContact',date:'chip-date',status:'chip-status'};
+  if(cm[key]) document.getElementById(cm[key])?.classList.add('active');
+  renderTable();
+}
+
+function getSorted(data) {
+  const SO = Object.fromEntries(STATUSES.map((s,i)=>[s,i]));
+  return [...data].sort((a,b)=>{
+    let av=a[sortKey]||'', bv=b[sortKey]||'';
+    if(sortKey==='status'){av=SO[av]??99;bv=SO[bv]??99;}
+    if(av<bv) return -1*sortDir;
+    if(av>bv) return sortDir;
+    const al=a.lastContact||'', bl=b.lastContact||'';
+    return al>bl?-1:al<bl?1:0;
+  });
+}
+
+// ─── フィルター ───
+function getFiltered() {
+  const s=document.getElementById('filter-staff').value;
+  const st=document.getElementById('filter-status').value;
+  return customers.filter(c=>(!s||c.staff===s)&&(!st||c.status===st));
+}
+
+// ─── アラート ───
+function getAlerts() {
+  return customers.filter(c=>['物件送付','返信待ち'].includes(c.status)&&daysSince(c.lastContact)>=1);
+}
+
+function renderAlerts() {
+  const alerts=getAlerts();
+  const sec=document.getElementById('alert-section');
+  if(!alerts.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  document.getElementById('alert-list').innerHTML=alerts.map(c=>{
+    const idx=customers.indexOf(c), d=daysSince(c.lastContact);
+    return `<div class="alert-row">
+      <div>
+        <span style="font-weight:500">${c.name}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:8px">担当：${c.staff}</span>
+        <span style="font-size:11px;color:#BA7517;margin-left:8px"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> ${d}日経過</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge ${BADGE[c.status]}">${c.status}</span>
+        <button class="follow-btn" onclick="sendFollowup(${idx})"><i class="ti ti-send" style="font-size:12px;vertical-align:-1px"></i> 物件はどうでしたか？を送る</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function sendFollowup(idx) {
+  customers[idx].lastContact=TODAYSTR;
+  customers[idx].status='返信待ち';
+  customers[idx].action='様子見';
+  flashIdx=idx; save(); renderTable();
+  setTimeout(()=>{flashIdx=null;},1500);
+}
+
+// ─── メトリクス ───
+function renderMetrics() {
+  const t=customers.length, k=customers.filter(c=>c.status==='成約').length;
+  const n=customers.filter(c=>['内見予定','内見実施','申込/他物件提案','成約'].includes(c.status)).length;
+  const r=customers.filter(c=>c.status==='離脱').length, al=getAlerts().length;
+  document.getElementById('metrics-top').innerHTML=`
+    <div class="metric"><div class="metric-label">総反響数</div><div class="metric-val">${t}</div><div class="metric-sub">今月</div></div>
+    <div class="metric good"><div class="metric-label">成約数</div><div class="metric-val" style="color:var(--teal)">${k}</div><div class="metric-sub">成約率 ${t>0?Math.round(k/t*100):0}%</div></div>
+    <div class="metric"><div class="metric-label">内見数</div><div class="metric-val">${n}</div><div class="metric-sub">内見率 ${t>0?Math.round(n/t*100):0}%</div></div>
+    <div class="metric"><div class="metric-label">離脱数</div><div class="metric-val">${r}</div><div class="metric-sub">離脱率 ${t>0?Math.round(r/t*100):0}%</div></div>
+    <div class="metric warn"><div class="metric-label" style="color:#633806">フォロー要</div><div class="metric-val" style="color:var(--amber)">${al}</div><div class="metric-sub" style="color:var(--amber)">件アクション待ち</div></div>
+  `;
+}
+
+// ─── テーブル ───
+function renderTable() {
+  const sorted=getSorted(getFiltered());
+  document.getElementById('tbody').innerHTML=sorted.map((c,i)=>{
+    const idx=customers.indexOf(c), lc=daysSince(c.lastContact);
+    let lcBadge='';
+    if(lc===0) lcBadge=`<span class="day-badge day-ok">今日</span>`;
+    else if(lc===1) lcBadge=`<span class="day-badge day-warn">1日前</span>`;
+    else if(lc>=2) lcBadge=`<span class="day-badge day-over">${lc}日前</span>`;
+    const needAlert=['物件送付','返信待ち'].includes(c.status)&&lc>=1;
+    const rankIcon=i===0?'<i class="ti ti-arrow-up" style="color:#1D9E75;font-size:13px"></i>':i===1?'<i class="ti ti-arrow-up" style="color:#85B7EB;font-size:12px"></i>':`<span style="font-size:10px;color:var(--text3)">${i+1}</span>`;
+    const cond=[c.area,c.rent,c.madori].filter(Boolean).map(p=>`<span class="cond-pill">${p}</span>`).join('');
+    return `<tr class="${idx===flashIdx?'row-flash':needAlert?'row-alert':''}">
+      <td style="text-align:center">${rankIcon}</td>
+      <td><span class="name-link" onclick="openEditModal(${idx})">${c.name}</span></td>
+      <td>${c.staff}</td>
+      <td style="white-space:nowrap;font-size:11px">${c.date}</td>
+      <td style="white-space:nowrap;font-size:11px">${c.lastContact||'—'}${lcBadge}</td>
+      <td><span class="badge ${BADGE[c.status]}">${c.status}</span></td>
+      <td style="text-align:center">${c.bukken==='送付済'?'<i class="ti ti-check" style="color:#1D9E75"></i>':'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="font-size:11px;white-space:nowrap">${c.ny||'—'}</td>
+      <td style="font-size:11px;white-space:nowrap">${c.nj||'—'}</td>
+      <td style="white-space:nowrap">${c.action?`<span style="font-size:11px;color:var(--purple);font-weight:500">${c.action}</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+      <td>${cond}${c.kodawari?`<br><span style="font-size:10px;color:var(--text3)">${c.kodawari}</span>`:''}</td>
+      <td style="font-size:11px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.note||''}</td>
+    </tr>`;
+  }).join('');
+  renderMetrics(); renderAlerts();
+}
+
+// ─── モーダル ───
+function openModal() {
+  editIdx=null;
+  document.getElementById('modal-title').innerHTML='<i class="ti ti-user-plus"></i>顧客追加';
+  ['f-name','f-note','f-area','f-rent','f-madori','f-kodawari'].forEach(id=>document.getElementById(id).value='');
+  ['f-ny','f-nj'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-date').value=TODAYSTR;
+  document.getElementById('f-lc').value=TODAYSTR;
+  document.getElementById('f-status').value='反響';
+  document.getElementById('f-bukken').value='未送付';
+  document.getElementById('f-action').value='';
+  document.getElementById('modal').classList.add('open');
+}
+
+function openEditModal(idx) {
+  editIdx=idx; const c=customers[idx];
+  document.getElementById('modal-title').innerHTML='<i class="ti ti-edit"></i>顧客編集';
+  document.getElementById('f-name').value=c.name;
+  document.getElementById('f-staff').value=c.staff;
+  document.getElementById('f-date').value=c.date;
+  document.getElementById('f-lc').value=c.lastContact||'';
+  document.getElementById('f-status').value=c.status;
+  document.getElementById('f-bukken').value=c.bukken;
+  document.getElementById('f-ny').value=c.ny||'';
+  document.getElementById('f-nj').value=c.nj||'';
+  document.getElementById('f-action').value=c.action||'';
+  document.getElementById('f-area').value=c.area||'';
+  document.getElementById('f-rent').value=c.rent||'';
+  document.getElementById('f-madori').value=c.madori||'';
+  document.getElementById('f-kodawari').value=c.kodawari||'';
+  document.getElementById('f-note').value=c.note||'';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function saveCustomer() {
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){alert('氏名を入力してください');return;}
+  const obj={
+    name, staff:document.getElementById('f-staff').value,
+    date:document.getElementById('f-date').value,
+    lastContact:document.getElementById('f-lc').value,
+    status:document.getElementById('f-status').value,
+    bukken:document.getElementById('f-bukken').value,
+    ny:document.getElementById('f-ny').value,
+    nj:document.getElementById('f-nj').value,
+    action:document.getElementById('f-action').value,
+    area:document.getElementById('f-area').value,
+    rent:document.getElementById('f-rent').value,
+    madori:document.getElementById('f-madori').value,
+    kodawari:document.getElementById('f-kodawari').value,
+    note:document.getElementById('f-note').value,
+  };
+  if(editIdx!==null){customers[editIdx]=obj;flashIdx=editIdx;}
+  else{customers.push(obj);flashIdx=customers.length-1;}
+  closeModal(); save(); renderTable();
+  setTimeout(()=>{flashIdx=null;},1500);
+}
+
+// ─── 目標管理 ───
+function renderGoals() {
+  const ge=parseInt(document.getElementById('goal-echo').value)||30;
+  const gn=parseInt(document.getElementById('goal-naiken').value)||10;
+  const gk=parseInt(document.getElementById('goal-keiyaku').value)||5;
+  const ae=customers.length;
+  const an=customers.filter(c=>['内見予定','内見実施','申込/他物件提案','成約'].includes(c.status)).length;
+  const ak=customers.filter(c=>c.status==='成約').length;
+  document.getElementById('goal-bars').innerHTML=[
+    {label:'反響',goal:ge,actual:ae,color:'#378ADD'},
+    {label:'内見',goal:gn,actual:an,color:'#534AB7'},
+    {label:'成約',goal:gk,actual:ak,color:'#1D9E75'},
+  ].map(it=>{
+    const pct=Math.min(100,Math.round(it.actual/it.goal*100));
+    return `<div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+        <span>${it.label}</span><span style="color:var(--text2)">${it.actual} / ${it.goal}件 (${pct}%)</span>
+      </div>
+      <div class="goal-bar-wrap"><div class="goal-bar-fill" style="width:${pct}%;background:${it.color}">${pct>=15?pct+'%':''}</div></div>
+    </div>`;
+  }).join('');
+  if(rateChart) rateChart.destroy();
+  rateChart=new Chart(document.getElementById('rateChart'),{
+    type:'doughnut',
+    data:{labels:STATUSES,datasets:[{data:STATUSES.map(s=>customers.filter(c=>c.status===s).length),backgroundColor:FC,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}件`}}}}
+  });
+}
+
+// ─── ファネル分析 ───
+function renderAnalysis() {
+  const fOrder=['反響','物件送付','返信待ち','内見予定','内見実施','申込/他物件提案','成約'];
+  const total=customers.length||1;
+  document.getElementById('funnel').innerHTML=fOrder.map((s,i)=>{
+    const cnt=customers.filter(c=>c.status===s).length;
+    const pct=Math.round(cnt/total*100);
+    return `<div class="funnel-row">
+      <div class="funnel-label">${s}</div>
+      <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(pct,4)}%;background:${FC[i]}">${cnt}件</div></div>
+      <div class="funnel-num">${pct}%</div>
+    </div>`;
+  }).join('');
+  const staffs=['田中','佐藤','鈴木'];
+  if(staffChart) staffChart.destroy();
+  staffChart=new Chart(document.getElementById('staffChart'),{
+    type:'bar',
+    data:{labels:staffs,datasets:[{label:'対応数',data:staffs.map(s=>customers.filter(c=>c.staff===s).length),backgroundColor:['#534AB7','#378ADD','#1D9E75'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+  if(weekChart) weekChart.destroy();
+  weekChart=new Chart(document.getElementById('weekChart'),{
+    type:'line',
+    data:{labels:['第1週','第2週','第3週','第4週'],datasets:[{label:'反響数',data:[3,4,2,1],borderColor:'#534AB7',backgroundColor:'rgba(83,74,183,0.08)',tension:0.3,fill:true,pointRadius:5,pointBackgroundColor:'#534AB7'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+}
+
+// ─── 売上分析 ───
+function updateSales() {
+  const goal=parseFloat(document.getElementById('s-goal').value)||300;
+  const unit=parseFloat(document.getElementById('s-unit').value)||20;
+  const elapsed=parseFloat(document.getElementById('s-elapsed').value)||10;
+  const total=parseFloat(document.getElementById('s-total').value)||26;
+  const closed=parseFloat(document.getElementById('s-closed').value)||0;
+  const cvr=parseFloat(document.getElementById('s-cvr').value)||20;
+  const remaining=Math.max(0,total-elapsed);
+  const targetCount=goal/unit;
+  const currentSales=closed*unit;
+  const gapSales=goal-currentSales;
+  const gapCount=Math.ceil(gapSales/unit);
+  const achieveRate=Math.min(100,Math.round(currentSales/goal*100));
+  const paceRate=Math.round(elapsed/total*100);
+  const ahead=achieveRate-paceRate;
+  const dailyNeed=remaining>0?gapCount/remaining:gapCount;
+  const echosNeed=Math.ceil(gapCount/(cvr/100));
+  const dailyEchoNeed=remaining>0?Math.ceil(echosNeed/remaining):echosNeed;
+  const color=achieveRate>=paceRate?'#1D9E75':achieveRate>=paceRate-15?'#BA7517':'#A32D2D';
+  const aheadText=ahead>=0?`ペース比 +${ahead}%`:`ペース比 ${ahead}%`;
+  document.getElementById('sales-metrics').innerHTML=`
+    <div class="metric ${achieveRate>=paceRate?'good':'warn'}"><div class="metric-label">達成率</div><div class="metric-val" style="color:${color}">${achieveRate}%</div><div class="metric-sub">${aheadText}</div></div>
+    <div class="metric"><div class="metric-label">現在の売上</div><div class="metric-val">${fmt(currentSales)}万円</div><div class="metric-sub">目標 ${fmt(goal)}万円</div></div>
+    <div class="metric warn"><div class="metric-label">残り必要売上</div><div class="metric-val" style="color:var(--amber)">${fmt(Math.max(0,gapSales))}万円</div><div class="metric-sub">残り ${Math.round(remaining)}営業日</div></div>
+    <div class="metric warn"><div class="metric-label">残り必要成約数</div><div class="metric-val" style="color:var(--amber)">${Math.max(0,gapCount)}件</div><div class="metric-sub">1日あたり ${dailyNeed.toFixed(1)}件ペース</div></div>
+    <div class="metric"><div class="metric-label">必要反響数（残り）</div><div class="metric-val">${Math.max(0,echosNeed)}件</div><div class="metric-sub">転換率${Math.round(cvr)}%で計算</div></div>
+    <div class="metric"><div class="metric-label">1日あたり反響目標</div><div class="metric-val">${dailyEchoNeed}件</div><div class="metric-sub">残り${Math.round(remaining)}日で割当て</div></div>
+  `;
+  const days=[],paceData=[],actualData=[],projData=[];
+  for(let d=0;d<=total;d++){
+    days.push(d+'日');
+    paceData.push(Math.round(goal/total*d));
+    if(d<=elapsed){actualData.push(Math.round(currentSales/elapsed*d));projData.push(null);}
+    else{actualData.push(null);projData.push(Math.round(currentSales+(gapSales/remaining)*(d-elapsed)));}
+  }
+  if(elapsed>0&&elapsed<=total) projData[elapsed]=currentSales;
+  if(paceChart) paceChart.destroy();
+  paceChart=new Chart(document.getElementById('paceChart'),{
+    type:'line',
+    data:{labels:days,datasets:[
+      {label:'目標ペース',data:paceData,borderColor:'#534AB7',borderWidth:2,pointRadius:0,tension:0,fill:false},
+      {label:'実績',data:actualData,borderColor:'#1D9E75',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#1D9E75',tension:0.2,fill:false},
+      {label:'残り必要ペース',data:projData,borderColor:'#E9A02B',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}万円`}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:10,font:{size:11}}},y:{beginAtZero:true,max:Math.ceil(goal*1.1/50)*50,ticks:{font:{size:11},callback:v=>v+'万'}}}}
+  });
+  const rows=[
+    {label:'成約',need:Math.max(0,gapCount),daily:dailyNeed.toFixed(1),desc:`残り${Math.round(remaining)}営業日`,level:gapCount<=0?'green':dailyNeed<=0.5?'green':dailyNeed<=1?'amber':'red'},
+    {label:'内見',need:Math.max(0,Math.ceil(gapCount/0.6)),daily:(Math.max(0,Math.ceil(gapCount/0.6))/remaining).toFixed(1),desc:'成約転換率60%で試算',level:gapCount<=0?'green':'amber'},
+    {label:'反響（SNS→LINE）',need:Math.max(0,echosNeed),daily:dailyEchoNeed,desc:`転換率${Math.round(cvr)}%で計算`,level:gapCount<=0?'green':dailyEchoNeed<=1?'amber':'red'},
+    {label:'物件送付',need:Math.max(0,echosNeed),daily:dailyEchoNeed,desc:'反響全員に当日送付が理想',level:gapCount<=0?'green':'amber'},
+  ];
+  const lm={red:['style="background:#FCEBEB;color:#791F1F"','要強化'],amber:['style="background:#FAEEDA;color:#633806"','要注意'],green:['style="background:#E1F5EE;color:#085041"','順調']};
+  document.getElementById('action-table').innerHTML=`
+    <thead><tr><th>アクション</th><th>残り必要数</th><th>1日あたり</th><th>ペース</th><th>状況</th></tr></thead>
+    <tbody>${rows.map(r=>{
+      const pct=Math.min(100,gapCount<=0?100:Math.round((1-r.need/(targetCount*1.5))*100));
+      const [s,t]=lm[r.level];
+      return `<tr>
+        <td style="font-weight:500">${r.label}</td>
+        <td>${r.need}件</td>
+        <td>${r.daily}件</td>
+        <td><div class="pace-bar-wrap"><div class="pace-bar" style="width:${Math.max(4,pct)}%;background:${r.level==='green'?'#1D9E75':r.level==='amber'?'#E9A02B':'#E24B4A'}"></div></div><br><span style="font-size:10px;color:var(--text3)">${r.desc}</span></td>
+        <td><span class="badge" ${s}>${t}</span></td>
+      </tr>`;
+    }).join('')}</tbody>`;
+}
+
+// ─── 初期化 ───
+renderTable();
+</script>
+</body>
+</html>
