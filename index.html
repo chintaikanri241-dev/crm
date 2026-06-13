@@ -107,6 +107,7 @@
   tr.row-alert { background: rgba(250,199,117,0.10); }
   tr.row-flash { animation: flashGreen 1.2s ease; }
   @keyframes flashGreen { 0% { background: rgba(29,158,117,0.2); } 100% { background: transparent; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .name-link { color: var(--purple); font-weight: 500; cursor: pointer; }
   .name-link:hover { text-decoration: underline; }
 
@@ -226,7 +227,10 @@
             <button class="chip" id="chip-status" onclick="setSort('status')"><i class="ti ti-layout-list" style="font-size:12px;vertical-align:-1px"></i> ステータス</button>
           </div>
         </div>
-        <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i>顧客追加</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-add" id="sync-btn" style="background:var(--surface2);color:var(--text);border:0.5px solid var(--border2);" onclick="loadFromSheet()"><i class="ti ti-refresh"></i> 同期</button>
+          <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i>顧客追加</button>
+        </div>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
         <div class="tbl-wrap">
@@ -383,20 +387,60 @@ const FC = ['#378ADD','#534AB7','#E9A02B','#1D9E75','#1D9E75','#639922','#3B6D11
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const TODAYSTR = TODAY.toISOString().slice(0,10);
 
-let customers = JSON.parse(localStorage.getItem('crm_customers') || 'null') || [
-  {name:'山田 花子',staff:'田中',date:'2025-06-01',lastContact:'2025-06-10',status:'成約',bukken:'送付済',ny:'',nj:'2025-06-08',action:'クロージング',area:'梅田',rent:'8万円',madori:'1LDK',kodawari:'宅配BOX必須',note:'LINE経由'},
-  {name:'鈴木 一郎',staff:'佐藤',date:'2025-06-03',lastContact:'2025-06-09',status:'内見実施',bukken:'送付済',ny:'2025-06-09',nj:'2025-06-09',action:'申込手続き案内',area:'難波',rent:'7万円',madori:'1K',kodawari:'駅近',note:''},
-  {name:'田中 美咲',staff:'田中',date:'2025-06-04',lastContact:'2025-06-08',status:'返信待ち',bukken:'送付済',ny:'',nj:'',action:'物件確認フォロー',area:'心斎橋',rent:'9万円',madori:'2LDK',kodawari:'ペット可',note:'2件送付'},
-  {name:'佐藤 健太',staff:'鈴木',date:'2025-06-05',lastContact:'2025-06-09',status:'物件送付',bukken:'送付済',ny:'',nj:'',action:'物件確認フォロー',area:'天王寺',rent:'6万円',madori:'1K',kodawari:'',note:''},
-  {name:'高橋 浩',staff:'佐藤',date:'2025-06-06',lastContact:'2025-06-10',status:'反響',bukken:'未送付',ny:'',nj:'',action:'内見日程調整',area:'本町',rent:'10万円',madori:'2LDK',kodawari:'分譲賃貸',note:'Instagram'},
-  {name:'伊藤 さくら',staff:'田中',date:'2025-06-07',lastContact:'2025-06-07',status:'離脱',bukken:'送付済',ny:'',nj:'',action:'',area:'梅田',rent:'7万円',madori:'1LDK',kodawari:'',note:'音信不通'},
-  {name:'渡辺 翔',staff:'鈴木',date:'2025-06-08',lastContact:'2025-06-10',status:'申込/他物件提案',bukken:'送付済',ny:'2025-06-10',nj:'',action:'申込手続き案内',area:'難波',rent:'8万円',madori:'1LDK',kodawari:'新築',note:''},
-  {name:'中村 愛',staff:'佐藤',date:'2025-06-09',lastContact:'2025-06-10',status:'成約',bukken:'送付済',ny:'2025-06-09',nj:'2025-06-09',action:'',area:'心斎橋',rent:'12万円',madori:'2LDK',kodawari:'駅近',note:'紹介'},
-  {name:'小林 直人',staff:'田中',date:'2025-06-10',lastContact:'2025-06-10',status:'反響',bukken:'未送付',ny:'',nj:'',action:'内見日程調整',area:'天王寺',rent:'7万円',madori:'1K',kodawari:'',note:'TikTok'},
-  {name:'加藤 由美',staff:'鈴木',date:'2025-06-09',lastContact:'2025-06-09',status:'物件送付',bukken:'送付済',ny:'',nj:'',action:'物件確認フォロー',area:'梅田',rent:'9万円',madori:'2LDK',kodawari:'バストイレ別',note:''},
-];
+// ─── スプレッドシート連携（Google Apps Script） ───
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwD0LSxTDmNAeJeHWwW2pZ-7HQPVFAnx_toqPu3iNN5LlXDRm3FRsU-UTmPWTEw6eag/exec';
+
+// スプレッドシートの日本語キー → CRM内部の英語キーへ変換
+function mapSheetRow(row) {
+  return {
+    name: row['氏名'] || row['LINE表示名'] || '',
+    staff: row['担当スタッフ'] || '',
+    date: row['反響日'] || '',
+    lastContact: row['最終連絡日'] || '',
+    status: row['ステータス'] || '反響',
+    bukken: row['物件送付'] || '',
+    ny: row['内見予定日'] || '',
+    nj: row['内見実施日'] || '',
+    action: row['次アクション'] || '',
+    area: row['エリア'] || '',
+    rent: row['家賃上限'] || '',
+    madori: row['間取り'] || '',
+    kodawari: row['こだわり条件'] || '',
+    note: row['備考'] || '',
+    lineDisplayName: row['LINE表示名'] || '',
+    lineUserId: row['LINE UserID'] || '',
+    lastMessage: row['最新メッセージ'] || '',
+    registeredAt: row['登録日時'] || '',
+  };
+}
+
+let customers = JSON.parse(localStorage.getItem('crm_customers') || 'null') || [];
 
 function save() { localStorage.setItem('crm_customers', JSON.stringify(customers)); }
+
+// ─── スプレッドシートから読み込み ───
+async function loadFromSheet() {
+  const btn = document.getElementById('sync-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> 読込中...'; }
+  try {
+    const res = await fetch(GAS_URL + '?action=customers&t=' + Date.now());
+    const json = await res.json();
+    if (json.status === 'ok' && Array.isArray(json.customers)) {
+      customers = json.customers.map(mapSheetRow);
+      save();
+      renderTable();
+      if (document.getElementById('page-goal')?.classList.contains('active')) renderGoals();
+      if (document.getElementById('page-analysis')?.classList.contains('active')) renderAnalysis();
+      if (document.getElementById('page-sales')?.classList.contains('active')) updateSales();
+      if (btn) { btn.innerHTML = '<i class="ti ti-check"></i> 同期完了'; setTimeout(()=>{btn.innerHTML='<i class="ti ti-refresh"></i> 同期'; btn.disabled=false;}, 1500); }
+    } else {
+      throw new Error(json.message || '取得失敗');
+    }
+  } catch (err) {
+    console.error('スプレッドシート読込エラー:', err);
+    if (btn) { btn.innerHTML = '<i class="ti ti-alert-triangle"></i> 失敗'; setTimeout(()=>{btn.innerHTML='<i class="ti ti-refresh"></i> 同期'; btn.disabled=false;}, 2000); }
+  }
+}
 
 let sortKey = 'lastContact', sortDir = -1, editIdx = null, flashIdx = null;
 let rateChart=null, staffChart=null, weekChart=null, paceChart=null;
@@ -720,6 +764,7 @@ function updateSales() {
 
 // ─── 初期化 ───
 renderTable();
+loadFromSheet();
 </script>
 </body>
 </html>
