@@ -450,6 +450,20 @@ let sortKey = 'lastContact', sortDir = -1, editIdx = null, flashIdx = null;
 let rateChart=null, staffChart=null, weekChart=null, paceChart=null;
 
 // ─── ユーティリティ ───
+function formatDateStr(v) {
+  if (!v) return '';
+  v = String(v).trim();
+  if (!v) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10);
+  const MONTHS = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+  const m1 = v.match(/\w{3}\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+  if (m1) return m1[3]+'-'+(MONTHS[m1[1]]||'01')+'-'+String(m1[2]).padStart(2,'0');
+  const m2 = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m2) return m2[3]+'-'+String(m2[1]).padStart(2,'0')+'-'+String(m2[2]).padStart(2,'0');
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function daysSince(d) { if(!d) return null; const dt=new Date(d); dt.setHours(0,0,0,0); return Math.floor((TODAY-dt)/86400000); }
 function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
 
