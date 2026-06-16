@@ -542,6 +542,18 @@ function renderAlerts() {
   }).join('');
 }
 
+function renderApply() {
+  const applyC = customers.filter(c=>c.status==='申込/審査中');
+  const sec = document.getElementById('apply-section');
+  if(!sec) return;
+  if(!applyC.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  document.getElementById('apply-list').innerHTML=applyC.map(c=>{
+    const d=daysSince(c.lastContact);
+    const db=d===null?'':d===0?'<span class="day-badge day-ok">今日</span>':d<=2?'<span class="day-badge day-warn">'+d+'日前</span>':'<span class="day-badge day-over">'+d+'日前</span>';
+    return '<div class="alert-row"><div><span style="font-weight:500">'+c.name+'</span><span style="font-size:11px;color:var(--text2);margin-left:8px">担当：'+c.staff+'</span> '+db+'</div><div style="display:flex;align-items:center;gap:8px;"><span class="badge b-apply">申込/審査中</span><span style="font-size:11px;color:var(--text2)">'+(c.action||'—')+'</span></div></div>';
+  }).join('');
+}
 function sendFollowup(idx) {
   customers[idx].lastContact=TODAYSTR;
   customers[idx].status='物件送付/返信待ち';
