@@ -622,7 +622,7 @@ function renderTable() {
       <td style="font-size:11px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.note||''}</td>
     </tr>`;
   }).join('');
-  renderMetrics(); renderAlerts();
+  renderMetrics(); renderAlerts(); renderApply(); renderContract();
 }
 
 // ─── モーダル ───
