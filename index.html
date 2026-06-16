@@ -114,12 +114,14 @@
   /* Badges */
   .badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500; white-space: nowrap; }
   .b-echo   { background: #E6F1FB; color: #0C447C; }
-  .b-sent   { background: #EEEDFE; color: #3C3489; }
+  .b-search { background: #FEF0E0; color: #7D3A00; border: 1.5px solid #F08030; font-weight:600; }
   .b-wait   { background: #FAEEDA; color: #633806; }
   .b-naiken { background: #E1F5EE; color: #085041; }
-  .b-moushi { background: #EAF3DE; color: #27500A; }
-  .b-done   { background: #EAF3DE; color: #173404; }
-  .b-stop   { background: #FCEBEB; color: #791F1F; }
+  .b-apply  { background: #F0EAFF; color: #4A1E8C; }
+  .b-retry  { background: #FDECEA; color: #8C1F1F; border: 1.5px solid #E05050; }
+  .b-ready  { background: #D4F0E0; color: #0A4A2A; font-weight:600; }
+  .b-done   { background: #1D9E75; color: #ffffff; font-weight:600; }
+  .b-stop   { background: #F0F0EE; color: #888880; }
   .day-badge { font-size: 10px; padding: 2px 6px; border-radius: 99px; margin-left: 4px; }
   .day-ok   { background: #E1F5EE; color: #085041; }
   .day-warn { background: #FAEEDA; color: #633806; }
@@ -384,7 +386,7 @@
 <script>
 // ─── データ ───
 const STATUSES = ['反響','物件検索中','物件送付/返信待ち','内見予定','申込/審査中','申込/他物件提案必要','審査通過/契約準備中','契約完了','離脱'];
-const BADGE = {'反響':'b-echo','物件検索中':'b-sent','物件送付/返信待ち':'b-wait','内見予定':'b-naiken','申込/審査中':'b-moushi','申込/他物件提案必要':'b-moushi','審査通過/契約準備中':'b-done','契約完了':'b-done','離脱':'b-stop'};
+const BADGE = {'反響':'b-echo','物件検索中':'b-search','物件送付/返信待ち':'b-wait','内見予定':'b-naiken','申込/審査中':'b-apply','申込/他物件提案必要':'b-retry','審査通過/契約準備中':'b-ready','契約完了':'b-done','離脱':'b-stop'};
 const FC = ['#378ADD','#534AB7','#E9A02B','#1D9E75','#1D9E75','#639922','#3B6D11','#E24B4A'];
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const TODAYSTR = TODAY.toISOString().slice(0,10);
