@@ -518,6 +518,27 @@ function getFiltered() {
   return customers.filter(c=>(!s||c.staff===s)&&(!st||c.status===st));
 }
 
+// ─── 契約まで後少しのフォロー ───
+function renderContract() {
+  const list = customers.filter(c => c.status === '審査通過/契約準備中');
+  const sec = document.getElementById('contract-section');
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('contract-list').innerHTML = list.map(c => {
+    const idx = customers.indexOf(c);
+    return `<div class="alert-row">
+      <div>
+        <span style="font-weight:500">${c.name}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:8px">担当：${c.staff}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#1B5E20;font-weight:500">${c.action || '審査通過/契約準備中'}</span>
+        <span style="font-size:11px;color:var(--text2)">${c.ny ? c.ny + '内見予定' : ''}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ─── 申込/審査中セクション ───
 function renderApplySection() {
   const applyList = customers.filter(c => c.status === '申込/審査中');
