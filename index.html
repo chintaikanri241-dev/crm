@@ -714,13 +714,13 @@ function saveCustomer() {
     '家賌上限': obj.rent, '間取り': obj.madori,
     'こだわり条件': obj.kodawari, '備考': obj.note,
   };
-  fetch(CRM_GAS_URL, {
-    method: 'POST',
-    body: JSON.stringify({action: 'saveCustomer', data: sheetData}),
-  }).then(r => r.json()).then(res => {
-    if (res.status === 'ok') { console.log('シート書き込み成功'); }
-    else { console.warn('シート書き込み失敗:', res); }
-  }).catch(e => console.warn('シート書き込みエラー:', e));
+  const params = CRM_GAS_URL + '?action=saveCustomer&data=' + encodeURIComponent(JSON.stringify(sheetData));
+  fetch(params)
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'ok') { console.log('シート書き込み成功'); }
+      else { console.warn('シート書き込み失敗:', res); }
+    }).catch(e => console.warn('シート書き込みエラー:', e));
 }
 
 // ─── 目標管理 ───
