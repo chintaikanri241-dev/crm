@@ -209,7 +209,7 @@
       </div>
       <div class="metrics" id="metrics-top"></div>
       <div class="alert-card" id="alert-section"><div class="alert-title"><i class="ti ti-bell-ringing"></i>フォローアップが必要なお客様</div><div id="alert-list"></div></div>
-      <div id="apply-list"></div></div>
+      <div id="apply-section" style="display:none"><div class="alert-card" style="background:#EEF2FF;border-color:#818CF8;"><div class="alert-title" style="color:#312E81"><i class="ti ti-file-text"></i>申込/審査中のお客様</div><div id="apply-list"></div></div></div>
       <div class="alert-card" id="contract-section" style="background:#E8F5E9;border-color:#66BB6A;display:none"><div class="alert-title" style="color:#1B5E20"><i class="ti ti-trophy"></i>契約まで後少しのフォロー</div><div id="contract-list"></div></div>
       <div class="toolbar">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -518,6 +518,28 @@ function getFiltered() {
   return customers.filter(c=>(!s||c.staff===s)&&(!st||c.status===st));
 }
 
+// ─── 申込/審査中セクション ───
+function renderApplySection() {
+  const applyList = customers.filter(c => c.status === '申込/審査中');
+  const sec = document.getElementById('apply-section');
+  if (!applyList.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('apply-list').innerHTML = applyList.map(c => {
+    const d = daysSince(c.lastContact);
+    return `<div class="alert-row">
+      <div>
+        <span style="font-weight:500">${c.name}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:8px">担当：${c.staff}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:8px">${d}日前</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#312E81;font-weight:500">${c.action || '申込/審査中'}</span>
+        <span style="font-size:11px;color:var(--text2)">${c.note || '審査結果待ち'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ─── アラート ───
 function getAlerts() {
   return customers.filter(c=>['物件送付/返信待ち','物件検索中'].includes(c.status)&&daysSince(c.lastContact)>=1);
@@ -597,7 +619,7 @@ function renderTable() {
       <td style="font-size:11px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.note||''}</td>
     </tr>`;
   }).join('');
-  renderMetrics(); renderAlerts(); renderContract();
+  renderMetrics(); renderAlerts(); renderContract(); renderApplySection();
 }
 
 // ─── モーダル ───
