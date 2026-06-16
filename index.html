@@ -395,6 +395,7 @@ const TODAYSTR = TODAY.toISOString().slice(0,10);
 
 // ─── スプレッドシート連携（Google Apps Script） ───
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwD0LSxTDmNAeJeHWwW2pZ-7HQPVFAnx_toqPu3iNN5LlXDRm3FRsU-UTmPWTEw6eag/exec';
+const CRM_GAS_URL = 'https://script.google.com/macros/s/AKfycbzU4rH6AKszvc9OKaf5lkUjhtBpy7kB8QOu5DfxrsDmPu-1-qSVbHkbkkly_0F8wIJA/exec';
 
 // スプレッドシートの日本語キー → CRM内部の英語キーへ変換
 function mapSheetRow(row) {
@@ -701,6 +702,19 @@ function saveCustomer() {
   else{customers.push(obj);flashIdx=customers.length-1;}
   closeModal(); save(); renderTable();
   setTimeout(()=>{flashIdx=null;},1500);
+  const sheetData = {
+    '氏名': obj.name, '担当スタッフ': obj.staff,
+    '反響日': obj.date, '最終連絡日': obj.lastContact,
+    'ステータス': obj.status, '物件送付': obj.bukken,
+    '内見予定日': obj.ny, '内見実施日': obj.nj,
+    '次アクション': obj.action, 'エリア': obj.area,
+    '家賌上限': obj.rent, '間取り': obj.madori,
+    'こだわり条件': obj.kodawari, '備考': obj.note,
+  };
+  fetch(CRM_GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify({action: 'saveCustomer', data: sheetData}),
+  }).catch(e => console.warn('シート書き込みエラー:', e));
 }
 
 // ─── 目標管理 ───
