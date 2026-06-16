@@ -519,7 +519,7 @@ function getFiltered() {
 
 // ─── アラート ───
 function getAlerts() {
-  return customers.filter(c=>['物件送付/返信待ち','申込/審査中'].includes(c.status)&&daysSince(c.lastContact)>=1);
+  return customers.filter(c=>c.status==='物件送付/返信待ち'&&daysSince(c.lastContact)>=1);
 }
 
 function renderAlerts() {
