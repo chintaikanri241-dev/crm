@@ -216,8 +216,9 @@
             </select>
             <select id="filter-status" onchange="renderTable()">
               <option value="">全ステータス</option>
-              <option>反響</option><option>物件送付</option><option>返信待ち</option>
-              <option>内見予定</option><option>内見実施</option><option>申込/他物件提案</option><option>成約</option><option>離脱</option>
+              <option>反響</option><option>物件検索中</option><option>物件送付/返信待ち</option>
+              <option>内見予定</option><option>申込/審査中</option><option>申込/他物件提案必要</option>
+              <option>審査通過/契約準備中</option><option>契約完了</option><option>離脱</option>
             </select>
           </div>
           <div class="sort-chips">
@@ -270,7 +271,7 @@
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div class="form-row"><label>反響目標数</label><input type="number" id="goal-echo" value="30" oninput="renderGoals()"></div>
             <div class="form-row"><label>内見目標数</label><input type="number" id="goal-naiken" value="10" oninput="renderGoals()"></div>
-            <div class="form-row"><label>成約目標数</label><input type="number" id="goal-keiyaku" value="5" oninput="renderGoals()"></div>
+            <div class="form-row"><label>契約完了目標数</label><input type="number" id="goal-keiyaku" value="5" oninput="renderGoals()"></div>
           </div>
         </div>
         <div class="card">
@@ -321,7 +322,7 @@
           <span><span class="leg-dot" style="background:#1D9E75"></span>実績</span>
           <span><span class="leg-dot" style="background:#E9A02B;border:1px dashed #BA7517"></span>残り必要ペース</span>
         </div>
-        <div style="position:relative;height:280px;"><canvas id="paceChart" role="img" aria-label="売上進捗グラフ">売上進捗ペースラインと実績の比較</canvas></div>
+       <div style="position:relative;height:280px;"><canvas id="paceChart" role="img" aria-label="売上進捗グラフ">売上進捗ペースラインと実績の比較</canvas></div>
       </div>
       <div class="card">
         <div class="card-title"><i class="ti ti-checklist"></i>目標達成に必要な残りアクション</div>
@@ -346,8 +347,9 @@
       <div class="form-row"><label>最終連絡日</label><input type="date" id="f-lc"></div>
       <div class="form-row"><label>ステータス</label>
         <select id="f-status">
-          <option>反響</option><option>物件送付</option><option>返信待ち</option>
-          <option>内見予定</option><option>内見実施</option><option>申込/他物件提案</option><option>成約</option><option>離脱</option>
+          <option>反響</option><option>物件検索中</option><option>物件送付/返信待ち</option>
+          <option>内見予定</option><option>申込/審査中</option><option>申込/他物件提案必要</option>
+          <option>審査通過/契約準備中</option><option>契約完了</option><option>離脱</option>
         </select>
       </div>
       <div class="form-row"><label>物件送付</label>
@@ -381,8 +383,8 @@
 
 <script>
 // ─── データ ───
-const STATUSES = ['反響','物件送付','返信待ち','内見予定','内見実施','申込/他物件提案','成約','離脱'];
-const BADGE = {'反響':'b-echo','物件送付':'b-sent','返信待ち':'b-wait','内見予定':'b-naiken','内見実施':'b-naiken','申込/他物件提案':'b-moushi','成約':'b-done','離脱':'b-stop'};
+const STATUSES = ['反響','物件検索中','物件送付/返信待ち','内見予定','申込/審査中','申込/他物件提案必要','審査通過/契約準備中','契約完了','離脱'];
+const BADGE = {'反響':'b-echo','物件検索中':'b-sent','物件送付/返信待ち':'b-wait','内見予定':'b-naiken','申込/審査中':'b-moushi','申込/他物件提案必要':'b-moushi','審査通過/契約準備中':'b-done','契約完了':'b-done','離脱':'b-stop'};
 const FC = ['#378ADD','#534AB7','#E9A02B','#1D9E75','#1D9E75','#639922','#3B6D11','#E24B4A'];
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const TODAYSTR = TODAY.toISOString().slice(0,10);
@@ -500,7 +502,7 @@ function getFiltered() {
 
 // ─── アラート ───
 function getAlerts() {
-  return customers.filter(c=>['物件送付','返信待ち'].includes(c.status)&&daysSince(c.lastContact)>=1);
+  return customers.filter(c=>['物件送付/返信待ち','申込/審査中'].includes(c.status)&&daysSince(c.lastContact)>=1);
 }
 
 function renderAlerts() {
@@ -526,7 +528,7 @@ function renderAlerts() {
 
 function sendFollowup(idx) {
   customers[idx].lastContact=TODAYSTR;
-  customers[idx].status='返信待ち';
+  customers[idx].status='物件送付/返信待ち';
   customers[idx].action='様子見';
   flashIdx=idx; save(); renderTable();
   setTimeout(()=>{flashIdx=null;},1500);
@@ -534,12 +536,12 @@ function sendFollowup(idx) {
 
 // ─── メトリクス ───
 function renderMetrics() {
-  const t=customers.length, k=customers.filter(c=>c.status==='成約').length;
-  const n=customers.filter(c=>['内見予定','内見実施','申込/他物件提案','成約'].includes(c.status)).length;
+  const t=customers.length, k=customers.filter(c=>c.status==='契約完了').length;
+  const n=customers.filter(c=>['内見予定','申込/審査中','申込/他物件提案必要','審査通過/契約準備中','契約完了'].includes(c.status)).length;
   const r=customers.filter(c=>c.status==='離脱').length, al=getAlerts().length;
   document.getElementById('metrics-top').innerHTML=`
     <div class="metric"><div class="metric-label">総反響数</div><div class="metric-val">${t}</div><div class="metric-sub">今月</div></div>
-    <div class="metric good"><div class="metric-label">成約数</div><div class="metric-val" style="color:var(--teal)">${k}</div><div class="metric-sub">成約率 ${t>0?Math.round(k/t*100):0}%</div></div>
+    <div class="metric good"><div class="metric-label">契約完了数</div><div class="metric-val" style="color:var(--teal)">${k}</div><div class="metric-sub">契約率 ${t>0?Math.round(k/t*100):0}%</div></div>
     <div class="metric"><div class="metric-label">内見数</div><div class="metric-val">${n}</div><div class="metric-sub">内見率 ${t>0?Math.round(n/t*100):0}%</div></div>
     <div class="metric"><div class="metric-label">離脱数</div><div class="metric-val">${r}</div><div class="metric-sub">離脱率 ${t>0?Math.round(r/t*100):0}%</div></div>
     <div class="metric warn"><div class="metric-label" style="color:#633806">フォロー要</div><div class="metric-val" style="color:var(--amber)">${al}</div><div class="metric-sub" style="color:var(--amber)">件アクション待ち</div></div>
@@ -555,7 +557,7 @@ function renderTable() {
     if(lc===0) lcBadge=`<span class="day-badge day-ok">今日</span>`;
     else if(lc===1) lcBadge=`<span class="day-badge day-warn">1日前</span>`;
     else if(lc>=2) lcBadge=`<span class="day-badge day-over">${lc}日前</span>`;
-    const needAlert=['物件送付','返信待ち'].includes(c.status)&&lc>=1;
+    const needAlert=['物件送付/返信待ち','申込/審査中'].includes(c.status)&&lc>=1;
     const rankIcon=i===0?'<i class="ti ti-arrow-up" style="color:#1D9E75;font-size:13px"></i>':i===1?'<i class="ti ti-arrow-up" style="color:#85B7EB;font-size:12px"></i>':`<span style="font-size:10px;color:var(--text3)">${i+1}</span>`;
     const cond=[c.area,c.rent,c.madori].filter(Boolean).map(p=>`<span class="cond-pill">${p}</span>`).join('');
     return `<tr class="${idx===flashIdx?'row-flash':needAlert?'row-alert':''}">
@@ -642,12 +644,12 @@ function renderGoals() {
   const gn=parseInt(document.getElementById('goal-naiken').value)||10;
   const gk=parseInt(document.getElementById('goal-keiyaku').value)||5;
   const ae=customers.length;
-  const an=customers.filter(c=>['内見予定','内見実施','申込/他物件提案','成約'].includes(c.status)).length;
-  const ak=customers.filter(c=>c.status==='成約').length;
+  const an=customers.filter(c=>['内見予定','申込/審査中','申込/他物件提案必要','審査通過/契約準備中','契約完了'].includes(c.status)).length;
+  const ak=customers.filter(c=>c.status==='契約完了').length;
   document.getElementById('goal-bars').innerHTML=[
     {label:'反響',goal:ge,actual:ae,color:'#378ADD'},
     {label:'内見',goal:gn,actual:an,color:'#534AB7'},
-    {label:'成約',goal:gk,actual:ak,color:'#1D9E75'},
+    {label:'契約完了',goal:gk,actual:ak,color:'#1D9E75'},
   ].map(it=>{
     const pct=Math.min(100,Math.round(it.actual/it.goal*100));
     return `<div style="margin-bottom:16px">
@@ -667,7 +669,7 @@ function renderGoals() {
 
 // ─── ファネル分析 ───
 function renderAnalysis() {
-  const fOrder=['反響','物件送付','返信待ち','内見予定','内見実施','申込/他物件提案','成約'];
+  const fOrder=['反響','物件検索中','物件送付/返信待ち','内見予定','申込/審査中','申込/他物件提案必要','審査通過/契約準備中','契約完了'];
   const total=customers.length||1;
   document.getElementById('funnel').innerHTML=fOrder.map((s,i)=>{
     const cnt=customers.filter(c=>c.status===s).length;
@@ -718,7 +720,7 @@ function updateSales() {
     <div class="metric ${achieveRate>=paceRate?'good':'warn'}"><div class="metric-label">達成率</div><div class="metric-val" style="color:${color}">${achieveRate}%</div><div class="metric-sub">${aheadText}</div></div>
     <div class="metric"><div class="metric-label">現在の売上</div><div class="metric-val">${fmt(currentSales)}万円</div><div class="metric-sub">目標 ${fmt(goal)}万円</div></div>
     <div class="metric warn"><div class="metric-label">残り必要売上</div><div class="metric-val" style="color:var(--amber)">${fmt(Math.max(0,gapSales))}万円</div><div class="metric-sub">残り ${Math.round(remaining)}営業日</div></div>
-    <div class="metric warn"><div class="metric-label">残り必要成約数</div><div class="metric-val" style="color:var(--amber)">${Math.max(0,gapCount)}件</div><div class="metric-sub">1日あたり ${dailyNeed.toFixed(1)}件ペース</div></div>
+    <div class="metric warn"><div class="metric-label">残り必要契約完了数</div><div class="metric-val" style="color:var(--amber)">${Math.max(0,gapCount)}件</div><div class="metric-sub">1日あたり ${dailyNeed.toFixed(1)}件ペース</div></div>
     <div class="metric"><div class="metric-label">必要反響数（残り）</div><div class="metric-val">${Math.max(0,echosNeed)}件</div><div class="metric-sub">転換率${Math.round(cvr)}%で計算</div></div>
     <div class="metric"><div class="metric-label">1日あたり反響目標</div><div class="metric-val">${dailyEchoNeed}件</div><div class="metric-sub">残り${Math.round(remaining)}日で割当て</div></div>
   `;
@@ -741,7 +743,7 @@ function updateSales() {
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}万円`}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:10,font:{size:11}}},y:{beginAtZero:true,max:Math.ceil(goal*1.1/50)*50,ticks:{font:{size:11},callback:v=>v+'万'}}}}
   });
   const rows=[
-    {label:'成約',need:Math.max(0,gapCount),daily:dailyNeed.toFixed(1),desc:`残り${Math.round(remaining)}営業日`,level:gapCount<=0?'green':dailyNeed<=0.5?'green':dailyNeed<=1?'amber':'red'},
+    {label:'契約完了',need:Math.max(0,gapCount),daily:dailyNeed.toFixed(1),desc:`残り${Math.round(remaining)}営業日`,level:gapCount<=0?'green':dailyNeed<=0.5?'green':dailyNeed<=1?'amber':'red'},
     {label:'内見',need:Math.max(0,Math.ceil(gapCount/0.6)),daily:(Math.max(0,Math.ceil(gapCount/0.6))/remaining).toFixed(1),desc:'成約転換率60%で試算',level:gapCount<=0?'green':'amber'},
     {label:'反響（SNS→LINE）',need:Math.max(0,echosNeed),daily:dailyEchoNeed,desc:`転換率${Math.round(cvr)}%で計算`,level:gapCount<=0?'green':dailyEchoNeed<=1?'amber':'red'},
     {label:'物件送付',need:Math.max(0,echosNeed),daily:dailyEchoNeed,desc:'反響全員に当日送付が理想',level:gapCount<=0?'green':'amber'},
