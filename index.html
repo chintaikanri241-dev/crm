@@ -538,15 +538,19 @@ function sendFollowup(idx) {
 
 // ─── メトリクス ───
 function renderMetrics() {
-  const t=customers.length, k=customers.filter(c=>c.status==='契約完了').length;
-  const n=customers.filter(c=>['内見予定','申込/審査中','申込/他物件提案必要','審査通過/契約準備中','契約完了'].includes(c.status)).length;
-  const r=customers.filter(c=>c.status==='離脱').length, al=getAlerts().length;
+  const t=customers.length;
+  const k=customers.filter(c=>c.status==='契約完了').length;
+  const ready=customers.filter(c=>c.status==='審査通過/契約準備中').length;
+  const apply=customers.filter(c=>c.status==='申込/審査中').length;
+  const prospect=customers.filter(c=>['反響','物件検索中','物件送付/返信待ち'].includes(c.status)).length;
+  const naiken=customers.filter(c=>c.status==='内見予定').length;
   document.getElementById('metrics-top').innerHTML=`
     <div class="metric"><div class="metric-label">総反響数</div><div class="metric-val">${t}</div><div class="metric-sub">今月</div></div>
-    <div class="metric good"><div class="metric-label">契約完了数</div><div class="metric-val" style="color:var(--teal)">${k}</div><div class="metric-sub">契約率 ${t>0?Math.round(k/t*100):0}%</div></div>
-    <div class="metric"><div class="metric-label">内見数</div><div class="metric-val">${n}</div><div class="metric-sub">内見率 ${t>0?Math.round(n/t*100):0}%</div></div>
-    <div class="metric"><div class="metric-label">離脱数</div><div class="metric-val">${r}</div><div class="metric-sub">離脱率 ${t>0?Math.round(r/t*100):0}%</div></div>
-    <div class="metric warn"><div class="metric-label" style="color:#633806">フォロー要</div><div class="metric-val" style="color:var(--amber)">${al}</div><div class="metric-sub" style="color:var(--amber)">件アクション待ち</div></div>
+    <div class="metric good"><div class="metric-label">成約数</div><div class="metric-val" style="color:var(--teal)">${k}</div><div class="metric-sub">契約完了</div></div>
+    <div class="metric" style="border:1px solid #9FE1CB"><div class="metric-label">審査通過</div><div class="metric-val" style="color:#0A4A2A">${ready}</div><div class="metric-sub">契約準備中</div></div>
+    <div class="metric" style="border:1px solid #C9B8F0"><div class="metric-label">申込数</div><div class="metric-val" style="color:#4A1E8C">${apply}</div><div class="metric-sub">審査中</div></div>
+    <div class="metric" style="border:1px solid #F08030"><div class="metric-label">見込み客数</div><div class="metric-val" style="color:#7D3A00">${prospect}</div><div class="metric-sub">反響〜返信待ち</div></div>
+    <div class="metric" style="border:1px solid #9FD9BE"><div class="metric-label">内見予定数</div><div class="metric-val" style="color:var(--teal)">${naiken}</div><div class="metric-sub">内見予定</div></div>
   `;
 }
 
