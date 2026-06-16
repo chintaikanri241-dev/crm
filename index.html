@@ -433,7 +433,10 @@ async function loadFromSheet() {
     const res = await fetch(GAS_URL + '?action=customers&t=' + Date.now());
     const json = await res.json();
     if (json.status === 'ok' && Array.isArray(json.customers)) {
-      customers = json.customers.map(mapSheetRow);
+      const sheetCustomers = json.customers.map(mapSheetRow);
+      const sheetNames = new Set(sheetCustomers.map(c => c.name));
+      const localOnly = customers.filter(c => c.name && !sheetNames.has(c.name));
+      customers = [...sheetCustomers, ...localOnly];
       save();
       renderTable();
       if (document.getElementById('page-goal')?.classList.contains('active')) renderGoals();
@@ -714,6 +717,9 @@ function saveCustomer() {
   fetch(CRM_GAS_URL, {
     method: 'POST',
     body: JSON.stringify({action: 'saveCustomer', data: sheetData}),
+  }).then(r => r.json()).then(res => {
+    if (res.status === 'ok') { console.log('シート書き込み成功'); }
+    else { console.warn('シート書き込み失敗:', res); }
   }).catch(e => console.warn('シート書き込みエラー:', e));
 }
 
