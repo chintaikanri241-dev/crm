@@ -210,6 +210,7 @@
       <div class="metrics" id="metrics-top"></div>
       <div class="alert-card" id="alert-section"><div class="alert-title"><i class="ti ti-bell-ringing"></i>フォローアップが必要なお客様</div><div id="alert-list"></div></div>
       <div class="alert-card" id="apply-section" style="background:#F5F0FF;border-color:#C9B8F0;display:none"><div class="alert-title" style="color:#4A1E8C"><i class="ti ti-file-check"></i>申込/審査中のお客様</div><div id="apply-list"></div></div>
+      <div class="alert-card" id="contract-section" style="background:#E8F5E9;border-color:#66BB6A;display:none"><div class="alert-title" style="color:#1B5E20"><i class="ti ti-trophy"></i>契約まで後少しのフォロー</div><div id="contract-list"></div></div>
       <div class="toolbar">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <div class="filters">
@@ -553,6 +554,19 @@ function renderApply() {
     const d=daysSince(c.lastContact);
     const db=d===null?'':d===0?'<span class="day-badge day-ok">今日</span>':d<=2?'<span class="day-badge day-warn">'+d+'日前</span>':'<span class="day-badge day-over">'+d+'日前</span>';
     return '<div class="alert-row"><div><span style="font-weight:500">'+c.name+'</span><span style="font-size:11px;color:var(--text2);margin-left:8px">担当：'+c.staff+'</span> '+db+'</div><div style="display:flex;align-items:center;gap:8px;"><span class="badge b-apply">申込/審査中</span><span style="font-size:11px;color:var(--text2)">'+(c.action||'—')+'</span></div></div>';
+  }).join('');
+}
+function renderContract() {
+  const cc=customers.filter(c=>['申込/審査中','申込/他物件提案必要','審査通過/契約準備中'].includes(c.status));
+  const s=document.getElementById('contract-section');
+  if(!s)return;
+  if(!cc.length){s.style.display='none';return;}
+  s.style.display='block';
+  document.getElementById('contract-list').innerHTML=cc.map(c=>{
+    const d=daysSince(c.lastContact);
+    const db=d===null?'':d===0?'<span class="day-badge day-ok">今日</span>':d<=2?'<span class="day-badge day-warn">'+d+'日前</span>':'<span class="day-badge day-over">'+d+'日前</span>';
+    const badge=BADGE[c.status]||'b-apply';
+    return '<div class="alert-row"><div><span style="font-weight:500">'+c.name+'</span><span style="font-size:11px;color:var(--text2);margin-left:8px">担当：'+c.staff+'</span> '+db+'</div><div style="display:flex;align-items:center;gap:8px;"><span class="badge '+badge+'">'+c.status+'</span><span style="font-size:11px;color:var(--text2)">'+(c.action||'—')+'</span></div></div>';
   }).join('');
 }
 function sendFollowup(idx) {
