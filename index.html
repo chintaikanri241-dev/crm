@@ -216,7 +216,7 @@
           <div class="filters">
             <select id="filter-staff" onchange="renderTable()">
               <option value="">全スタッフ</option>
-              <option>田中</option><option>佐藤</option><option>鈴木</option>
+              <option>西井</option><option>坂本</option><option>荒木</option>
             </select>
             <select id="filter-status" onchange="renderTable()">
               <option value="">全ステータス</option>
@@ -337,6 +337,18 @@
   </main>
 </div>
 
+<!-- 顧客詳細モーダル -->
+<div class="modal-bg" id="detail-modal">
+  <div class="modal" style="width:580px;">
+    <div class="modal-title" id="detail-title"><i class="ti ti-user"></i>顧客詳細</div>
+    <div id="detail-body"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('detail-modal').classList.remove('open')">閉じる</button>
+      <button class="btn-save" onclick="openEditFromDetail()"><i class="ti ti-edit" style="font-size:13px"></i> 編集</button>
+    </div>
+  </div>
+</div>
+
 <!-- 顧客追加・編集モーダル -->
 <div class="modal-bg" id="modal">
   <div class="modal">
@@ -345,7 +357,7 @@
       <div class="form-section">基本情報</div>
       <div class="form-row"><label>氏名</label><input type="text" id="f-name" placeholder="山田 太郎"></div>
       <div class="form-row"><label>担当スタッフ</label>
-        <select id="f-staff"><option>田中</option><option>佐藤</option><option>鈴木</option></select>
+        <select id="f-staff"><option>西井</option><option>坂本</option><option>荒木</option></select>
       </div>
       <div class="form-row"><label>反響日</label><input type="date" id="f-date"></div>
       <div class="form-row"><label>最終連絡日</label><input type="date" id="f-lc"></div>
@@ -371,12 +383,24 @@
         </select>
       </div>
       <div class="form-row"></div>
+      <div class="form-section">顧客情報</div>
+      <div class="form-row"><label>フリガナ</label><input type="text" id="f-furigana" placeholder="ヤマダタロウ"></div>
+      <div class="form-row"><label>性別</label><select id="f-gender"><option value="">—</option><option>男性</option><option>女性</option><option>その他</option></select></div>
+      <div class="form-row"><label>ご職業</label><input type="text" id="f-shokugyo" placeholder="会社員"></div>
+      <div class="form-row"><label>ご年収（万円）</label><input type="text" id="f-nenshu" placeholder="500"></div>
       <div class="form-section">希望条件</div>
-      <div class="form-row"><label>エリア</label><input type="text" id="f-area" placeholder="梅田・難波エリア"></div>
-      <div class="form-row"><label>家賃上限</label><input type="text" id="f-rent" placeholder="8万円以内"></div>
-      <div class="form-row"><label>間取り</label><input type="text" id="f-madori" placeholder="1LDK〜2LDK"></div>
+      <div class="form-row"><label>引越し希望日</label><input type="date" id="f-hikkoshi"></div>
+      <div class="form-row"><label>入居人数</label><input type="text" id="f-ninzu" placeholder="2人暮らし"></div>
+      <div class="form-row"><label>エリア</label><input type="text" id="f-area" placeholder="二子玉〜上野毛付近"></div>
+      <div class="form-row"><label>沿線・最寄駅</label><input type="text" id="f-ensen" placeholder="田園都市線・井の頭線"></div>
+      <div class="form-row"><label>家賃上限（万円）</label><input type="text" id="f-rent" placeholder="25"></div>
+      <div class="form-row"><label>間取り</label><input type="text" id="f-madori" placeholder="2LDK〜"></div>
+      <div class="form-row"><label>駅徒歩（分以内）</label><input type="text" id="f-toho" placeholder="15"></div>
+      <div class="form-row"><label>築年数</label><input type="text" id="f-chikunen" placeholder="特になし"></div>
       <div class="form-row"><label>こだわり条件</label><input type="text" id="f-kodawari" placeholder="ペット可・駅近など"></div>
-      <div class="form-row full"><label>備考</label><textarea id="f-note" placeholder="その他メモ"></textarea></div>
+      <div class="form-row"><label>初期費用上限（万円）</label><input type="text" id="f-shoki" placeholder="50"></div>
+      <div class="form-row full"><label>自由記入欄</label><textarea id="f-jiyuu" placeholder="お客様からのメッセージなど"></textarea></div>
+      <div class="form-row full"><label>備考（社内メモ）</label><textarea id="f-note" placeholder="その他メモ"></textarea></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
@@ -414,6 +438,17 @@ function mapSheetRow(row) {
     madori: row['間取り'] || '',
     kodawari: row['こだわり条件'] || '',
     note: row['備考'] || '',
+    furigana: row['フリガナ'] || '',
+    gender: row['性別'] || '',
+    shokugyo: row['ご職業'] || '',
+    nenshu: row['ご年収'] || '',
+    hikkoshi: row['引越し希望日'] || '',
+    ninzu: row['入居人数'] || '',
+    ensen: row['沿線・最寄駅'] || '',
+    toho: row['駅徒歩'] || '',
+    chikunen: row['築年数'] || '',
+    shoki: row['初期費用上限'] || '',
+    jiyuu: row['自由記入欄'] || '',
     lineDisplayName: row['LINE表示名'] || '',
     lineUserId: row['LINE UserID'] || '',
     lastMessage: row['最新メッセージ'] || '',
@@ -472,6 +507,7 @@ function formatDateStr(v) {
 }
 function daysSince(d) { if(!d) return null; const dt=new Date(d); dt.setHours(0,0,0,0); return Math.floor((TODAY-dt)/86400000); }
 function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+function shortDate(v) { if(!v) return '—'; const s=formatDateStr(v); if(!s||s==='—') return v; const m=s.match(/^\d{4}-(\d{2})-(\d{2})/); return m ? parseInt(m[1])+'/'+parseInt(m[2]) : s; }
 
 // ─── ナビ ───
 function showPage(id) {
@@ -631,14 +667,14 @@ function renderTable() {
     const cond=[c.area,c.rent,c.madori].filter(Boolean).map(p=>`<span class="cond-pill">${p}</span>`).join('');
     return `<tr class="${idx===flashIdx?'row-flash':needAlert?'row-alert':''}">
       <td style="text-align:center">${rankIcon}</td>
-      <td><span class="name-link" onclick="openEditModal(${idx})">${c.name}</span></td>
+      <td><span class="name-link" onclick="openDetailModal(${idx})">${c.name}</span></td>
       <td>${c.staff}</td>
-      <td style="white-space:nowrap;font-size:11px">${c.date}</td>
-      <td style="white-space:nowrap;font-size:11px">${c.lastContact||'—'}${lcBadge}</td>
+      <td style="white-space:nowrap;font-size:11px">${shortDate(c.date)}</td>
+      <td style="white-space:nowrap;font-size:11px">${shortDate(c.lastContact)}${lcBadge}</td>
       <td><span class="badge ${BADGE[c.status]}">${c.status}</span></td>
       <td style="text-align:center">${c.bukken==='送付済'?'<i class="ti ti-check" style="color:#1D9E75"></i>':'<span style="color:var(--text3)">—</span>'}</td>
-      <td style="font-size:11px;white-space:nowrap">${c.ny||'—'}</td>
-      <td style="font-size:11px;white-space:nowrap">${c.nj||'—'}</td>
+      <td style="font-size:11px;white-space:nowrap">${shortDate(c.ny)}</td>
+      <td style="font-size:11px;white-space:nowrap">${shortDate(c.nj)}</td>
       <td style="white-space:nowrap">${c.action?`<span style="font-size:11px;color:var(--purple);font-weight:500">${c.action}</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
       <td>${cond}${c.kodawari?`<br><span style="font-size:10px;color:var(--text3)">${c.kodawari}</span>`:''}</td>
       <td style="font-size:11px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.note||''}</td>
@@ -651,7 +687,7 @@ function renderTable() {
 function openModal() {
   editIdx=null;
   document.getElementById('modal-title').innerHTML='<i class="ti ti-user-plus"></i>顧客追加';
-  ['f-name','f-note','f-area','f-rent','f-madori','f-kodawari'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-note','f-area','f-rent','f-madori','f-kodawari','f-furigana','f-shokugyo','f-nenshu','f-ninzu','f-ensen','f-toho','f-chikunen','f-shoki','f-jiyuu'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   ['f-ny','f-nj'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-date').value=TODAYSTR;
   document.getElementById('f-lc').value=TODAYSTR;
@@ -678,6 +714,17 @@ function openEditModal(idx) {
   document.getElementById('f-madori').value=c.madori||'';
   document.getElementById('f-kodawari').value=c.kodawari||'';
   document.getElementById('f-note').value=c.note||'';
+  document.getElementById('f-furigana').value=c.furigana||'';
+  const gEl=document.getElementById('f-gender'); if(gEl) gEl.value=c.gender||'';
+  document.getElementById('f-shokugyo').value=c.shokugyo||'';
+  document.getElementById('f-nenshu').value=c.nenshu||'';
+  document.getElementById('f-hikkoshi').value=c.hikkoshi||'';
+  document.getElementById('f-ninzu').value=c.ninzu||'';
+  document.getElementById('f-ensen').value=c.ensen||'';
+  document.getElementById('f-toho').value=c.toho||'';
+  document.getElementById('f-chikunen').value=c.chikunen||'';
+  document.getElementById('f-shoki').value=c.shoki||'';
+  document.getElementById('f-jiyuu').value=c.jiyuu||'';
   document.getElementById('modal').classList.add('open');
 }
 
@@ -700,6 +747,17 @@ function saveCustomer() {
     madori:document.getElementById('f-madori').value,
     kodawari:document.getElementById('f-kodawari').value,
     note:document.getElementById('f-note').value,
+    furigana:document.getElementById('f-furigana').value,
+    gender:document.getElementById('f-gender').value,
+    shokugyo:document.getElementById('f-shokugyo').value,
+    nenshu:document.getElementById('f-nenshu').value,
+    hikkoshi:document.getElementById('f-hikkoshi').value,
+    ninzu:document.getElementById('f-ninzu').value,
+    ensen:document.getElementById('f-ensen').value,
+    toho:document.getElementById('f-toho').value,
+    chikunen:document.getElementById('f-chikunen').value,
+    shoki:document.getElementById('f-shoki').value,
+    jiyuu:document.getElementById('f-jiyuu').value,
   };
   if(editIdx!==null){customers[editIdx]=obj;flashIdx=editIdx;}
   else{customers.push(obj);flashIdx=customers.length-1;}
@@ -711,8 +769,14 @@ function saveCustomer() {
     'ステータス': obj.status, '物件送付': obj.bukken,
     '内見予定日': obj.ny, '内見実施日': obj.nj,
     '次アクション': obj.action, 'エリア': obj.area,
-    '家賌上限': obj.rent, '間取り': obj.madori,
+    '家賃上限': obj.rent, '間取り': obj.madori,
     'こだわり条件': obj.kodawari, '備考': obj.note,
+    'フリガナ': obj.furigana, '性別': obj.gender,
+    'ご職業': obj.shokugyo, 'ご年収': obj.nenshu,
+    '引越し希望日': obj.hikkoshi, '入居人数': obj.ninzu,
+    '沿線・最寄駅': obj.ensen, '駅徒歩': obj.toho,
+    '築年数': obj.chikunen, '初期費用上限': obj.shoki,
+    '自由記入欄': obj.jiyuu,
   };
   const params = CRM_GAS_URL + '?action=saveCustomer&data=' + encodeURIComponent(JSON.stringify(sheetData));
   const cbName = 'crmSave_' + Date.now();
@@ -771,7 +835,7 @@ function renderAnalysis() {
       <div class="funnel-num">${pct}%</div>
     </div>`;
   }).join('');
-  const staffs=['田中','佐藤','鈴木'];
+  const staffs=['西井','坂本','荒木'];
   if(staffChart) staffChart.destroy();
   staffChart=new Chart(document.getElementById('staffChart'),{
     type:'bar',
