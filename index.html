@@ -698,8 +698,8 @@ function openDetailModal(idx) {
       ${row('ご職業', c.shokugyo)}
       ${row('ご年収', c.nenshu ? c.nenshu + '万円' : '')}
       ${row('ステータス', '<span class="badge '+BADGE[c.status]+'">'+c.status+'</span>')}
-      ${row('反響日', c.date)}
-      ${row('最終連絡日', c.lastContact)}
+      ${row('反響日', shortDate(c.date))}
+      ${row('最終連絡日', shortDate(c.lastContact))}
       ${row('次アクション', c.action)}
     </div>
     <div style="margin-bottom:12px">
