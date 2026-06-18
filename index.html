@@ -715,12 +715,18 @@ function saveCustomer() {
     'こだわり条件': obj.kodawari, '備考': obj.note,
   };
   const params = CRM_GAS_URL + '?action=saveCustomer&data=' + encodeURIComponent(JSON.stringify(sheetData));
-  fetch(params)
-    .then(r => r.json())
-    .then(res => {
-      if (res.status === 'ok') { console.log('シート書き込み成功'); }
-      else { console.warn('シート書き込み失敗:', res); }
-    }).catch(e => console.warn('シート書き込みエラー:', e));
+  const cbName = 'crmSave_' + Date.now();
+  window[cbName] = (res) => {
+    delete window[cbName];
+    document.getElementById(cbName)?.remove();
+    if (res.status === 'ok') { console.log('シート書き込み成功'); }
+    else { console.warn('シート書き込み失敗:', res); }
+  };
+  const script = document.createElement('script');
+  script.id = cbName;
+  script.src = params + '&callback=' + cbName;
+  script.onerror = () => console.warn('シート書き込みエラー');
+  document.head.appendChild(script);
 }
 
 // ─── 目標管理 ───
