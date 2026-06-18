@@ -683,6 +683,48 @@ function renderTable() {
   renderMetrics(); renderAlerts(); renderContract(); renderApplySection();
 }
 
+// ─── 顧客詳細モーダル ───
+let detailIdx = null;
+function openDetailModal(idx) {
+  detailIdx = idx;
+  const c = customers[idx];
+  document.getElementById('detail-title').innerHTML = `<i class="ti ti-user"></i> ${c.name}${c.furigana ? ' <span style="font-size:12px;font-weight:400;color:var(--text2)">（'+c.furigana+'）</span>' : ''}`;
+  const row = (label, val) => val ? `<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="color:var(--text2);min-width:130px;flex-shrink:0">${label}</span><span style="font-weight:500">${val}</span></div>` : '';
+  document.getElementById('detail-body').innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--purple);letter-spacing:1px;margin-bottom:6px">▌ 基本情報</div>
+      ${row('担当スタッフ', c.staff)}
+      ${row('性別', c.gender)}
+      ${row('ご職業', c.shokugyo)}
+      ${row('ご年収', c.nenshu ? c.nenshu + '万円' : '')}
+      ${row('ステータス', '<span class="badge '+BADGE[c.status]+'">'+c.status+'</span>')}
+      ${row('反響日', c.date)}
+      ${row('最終連絡日', c.lastContact)}
+      ${row('次アクション', c.action)}
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--purple);letter-spacing:1px;margin-bottom:6px">▌ 希望条件</div>
+      ${row('引越し希望日', c.hikkoshi)}
+      ${row('入居人数', c.ninzu)}
+      ${row('希望エリア', c.area)}
+      ${row('沿線・最寄駅', c.ensen)}
+      ${row('家賃上限', c.rent ? c.rent + '万円以下' : '')}
+      ${row('間取り', c.madori)}
+      ${row('駅徒歩', c.toho ? c.toho + '分以内' : '')}
+      ${row('築年数', c.chikunen)}
+      ${row('こだわり条件', c.kodawari)}
+      ${row('初期費用上限', c.shoki ? c.shoki + '万円以下' : '')}
+    </div>
+    ${c.jiyuu ? '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--purple);letter-spacing:1px;margin-bottom:6px">▌ お客様コメント</div><div style="background:var(--bg);border-radius:8px;padding:10px;font-size:13px;line-height:1.6">'+c.jiyuu+'</div></div>' : ''}
+    ${c.note ? '<div><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">▌ 社内メモ</div><div style="background:var(--bg);border-radius:8px;padding:10px;font-size:13px;color:var(--text2);line-height:1.6">'+c.note+'</div></div>' : ''}
+  `;
+  document.getElementById('detail-modal').classList.add('open');
+}
+function openEditFromDetail() {
+  document.getElementById('detail-modal').classList.remove('open');
+  openEditModal(detailIdx);
+}
+
 // ─── モーダル ───
 function openModal() {
   editIdx=null;
